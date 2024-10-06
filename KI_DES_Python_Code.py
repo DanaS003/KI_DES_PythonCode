@@ -228,8 +228,6 @@ def generate_round_keys(original_key):
     
     return round_keys
 
-
-# Fungsi untuk enkripsi dengan opsi output dalam format biner atau hex
 # Fungsi untuk enkripsi dengan opsi output dalam format biner atau hex
 def encryption(user_input, original_key, output_format="bin"):
     convert_user_input_to_biner = string_to_binary(user_input)
