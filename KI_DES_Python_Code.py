@@ -155,14 +155,13 @@ def hex_to_binary(s):
           '4': "0100", '5': "0101", '6': "0110", '7': "0111",
           '8': "1000", '9': "1001", 'A': "1010", 'B': "1011",
           'C': "1100", 'D': "1101", 'E': "1110", 'F': "1111"}
-    bin_str = ""
+    binary_representation = ""  # Menggunakan nama variabel binary_representation
     for i in range(len(s)):
         if s[i] in mp:
-            bin_str += mp[s[i]]
+            binary_representation += mp[s[i]]
         else:
-            bin_str += format(ord(s[i]), '08b')
-    return bin_str
-
+            binary_representation += format(ord(s[i]), '08b')
+    return binary_representation  # Mengembalikan representasi biner
 
 # Fungsi konversi Binary ke Hexadecimal
 def binary_to_hex(s):
@@ -170,10 +169,11 @@ def binary_to_hex(s):
           "0100": '4', "0101": '5', "0110": '6', "0111": '7',
           "1000": '8', "1001": '9', "1010": 'A', "1011": 'B',
           "1100": 'C', "1101": 'D', "1110": 'E', "1111": 'F'}
-    hex_str = ""
+    binary_representation = ""  # Menggunakan nama variabel binary_representation
     for i in range(0, len(s), 4):
-        hex_str += mp[s[i:i + 4]]
-    return hex_str
+        binary_representation += mp[s[i:i + 4]]
+    return binary_representation  # Mengembalikan representasi hexadecimal
+
 
 # Fungsi untuk memformat biner menjadi blok-blok 8 angka
 def format_binary(binary_str, block_size=8):
@@ -181,6 +181,9 @@ def format_binary(binary_str, block_size=8):
 
 # Permutasi awal (Initial Permutation)
 def initial_perm_on_binary(binary_representation):
+    if len(binary_representation) != 64:
+        raise ValueError("Input binary representation must be exactly 64 bits long.")
+    
     ip_result = [None] * 64
     for i in range(64):
         ip_result[i] = binary_representation[initial_perm_table[i] - 1]
@@ -229,8 +232,8 @@ def generate_round_keys(original_key):
     return round_keys
 
 # Fungsi untuk enkripsi dengan opsi output dalam format biner atau hex
-def encryption(user_input, original_key, output_format="bin"):
-    convert_user_input_to_biner = string_to_binary(user_input)
+def encryption(user_input, original_key, output_format):
+    convert_user_input_to_biner = user_input
     round_keys = generate_round_keys(original_key)  # key pertama
     ip_result_str = initial_perm_on_binary(convert_user_input_to_biner)
     
@@ -239,8 +242,8 @@ def encryption(user_input, original_key, output_format="bin"):
     right_biner_perm = ip_result_str[32:]
 
     # Tampilkan L0 dan R0
-    print(f"Initial Left (L0): {left_biner_perm}")
-    print(f"Initial Right (R0): {right_biner_perm}")
+    print(f"Initial Left (L0): {format_binary(left_biner_perm,8)}")
+    print(f"Initial Right (R0): {format_binary(right_biner_perm,8)}")
 
     for round_num in range(16):
         # Ekspansi dari 32 ke 48 bit
@@ -269,10 +272,10 @@ def encryption(user_input, original_key, output_format="bin"):
 
         # Tampilkan hasil per ronde termasuk Left dan Right
         print(f"\nRound {round_num + 1} Encryption:")
-        print(f"Left (L{round_num + 1}): {left_biner_perm}")
-        print(f"Right (R{round_num + 1}): {right_biner_perm}")
-
+        
         if output_format == "hex":
+            print(f"Left (L{round_num + 1}): {binary_to_hex(left_biner_perm)}")
+            print(f"Right (R{round_num + 1}): {binary_to_hex(right_biner_perm)}")
             print(f"Key: {binary_to_hex(round_key_str)}")
             print(f"Expanded Right: {binary_to_hex(expanded_result_str)}")
             print(f"XOR Result: {binary_to_hex(xor_result_str)}")
@@ -280,6 +283,8 @@ def encryption(user_input, original_key, output_format="bin"):
             print(f"P-Box Result: {binary_to_hex(''.join(p_box_result))}")
             print(f"New Right (R{round_num + 1}): {binary_to_hex(new_right_biner_perm)}\n")
         else:
+            print(f"Left (L{round_num + 1}): {format_binary(left_biner_perm, 8)}")
+            print(f"Right (R{round_num + 1}): {format_binary(right_biner_perm, 8)}")
             print(f"Key: {format_binary(round_key_str, 8)}")
             print(f"Expanded Right: {format_binary(expanded_result_str, 8)}")
             print(f"XOR Result: {format_binary(xor_result_str, 8)}")
@@ -287,34 +292,42 @@ def encryption(user_input, original_key, output_format="bin"):
             print(f"P-Box Result: {format_binary(''.join(p_box_result), 8)}")
             print(f"New Right (R{round_num + 1}): {format_binary(new_right_biner_perm, 8)}\n")
 
+    # Gabungkan L16 dan R16, lalu lakukan permutasi akhir
+
         # Pertukaran L dan R
         left_biner_perm, right_biner_perm = right_biner_perm, new_right_biner_perm
 
     # Gabungkan L16 dan R16, lalu lakukan permutasi akhir
     final_result = right_biner_perm + left_biner_perm
-    final_cipher = ''.join([final_result[ip_inverse_table[i] - 1] for i in range(64)])
+    enc_final_cipher = ''.join([final_result[ip_inverse_table[i] - 1] for i in range(64)])
 
     # Pilih format akhir berdasarkan preferensi
     if output_format == "hex":
-        final_cipher_hex = binary_to_hex(final_cipher)
+        final_cipher_hex = binary_to_hex(enc_final_cipher)
         print(f"\nFinal Cipher (Hex): {final_cipher_hex}")
         return final_cipher_hex
     else:
-        print(f"\nFinal Cipher (Binary): {final_cipher}")
-        return final_cipher
+        print(f"\nFinal Cipher (Binary): {format_binary(enc_final_cipher,8)}")
+        return enc_final_cipher
 
-# Fungsi untuk dekripsi
-def decryption(final_cipher, original_key, output_format="bin"):
+def decryption(enc_final_cipher, original_key, output_format, input_format):
+    # Jika input adalah text dan output adalah hex, konversi dari hex ke biner
+    if input_format == "text" and output_format == "hex":
+        enc_final_cipher = hex_to_binary(enc_final_cipher)
+    if input_format == "hex" and output_format == "bin":
+        enc_final_cipher = binary_to_hex(enc_final_cipher)
+
     round_keys = generate_round_keys(original_key)
-    ip_dec_result_str = initial_perm_on_binary(final_cipher)
-    
+    print(f"Final Cipher (L0): {enc_final_cipher}")
+
+    ip_dec_result_str = initial_perm_on_binary(enc_final_cipher)
     # Pisahkan hasil permutasi awal menjadi bagian kiri dan kanan
     left_biner_perm = ip_dec_result_str[:32]
     right_biner_perm = ip_dec_result_str[32:]
 
     # Tampilkan L0 dan R0
-    print(f"Initial Left (L0): {left_biner_perm}")
-    print(f"Initial Right (R0): {right_biner_perm}")
+    print(f"Initial Left (L0): {format_binary(left_biner_perm,8)}")
+    print(f"Initial Right (R0): {format_binary(right_biner_perm,8)}")
 
     for round_num in range(16):
         # Ekspansi dari 32 ke 48 bit
@@ -322,7 +335,7 @@ def decryption(final_cipher, original_key, output_format="bin"):
         expanded_result_str = ''.join(expanded_result)
         round_key_str = round_keys[15 - round_num]
 
-        # Lakukan XOR antara hasil ekspansi dan kunci putaran
+        # Lakukan XOR antara hasil ekspansi dan key rotation
         xor_result_str = ''.join(
             str(int(expanded_result_str[i]) ^ int(round_key_str[i])) for i in range(48))
         
@@ -347,10 +360,9 @@ def decryption(final_cipher, original_key, output_format="bin"):
         )
         # Tampilkan hasil per ronde termasuk Left dan Right
         print(f"\nRound {round_num + 1} Decryption:")
-        print(f"Left (L{round_num + 1}): {left_biner_perm}")
-        print(f"Right (R{round_num + 1}): {right_biner_perm}")
-
         if output_format == "hex":
+            print(f"Left (L{round_num + 1}): {binary_to_hex(left_biner_perm)}")
+            print(f"Right (R{round_num + 1}): {binary_to_hex(right_biner_perm)}")
             print(f"Key: {binary_to_hex(round_key_str)}")
             print(f"Expanded Right: {binary_to_hex(expanded_result_str)}")
             print(f"XOR Result: {binary_to_hex(xor_result_str)}")
@@ -358,6 +370,8 @@ def decryption(final_cipher, original_key, output_format="bin"):
             print(f"P-Box Result: {binary_to_hex(''.join(p_box_result))}")
             print(f"New Right (R{round_num + 1}): {binary_to_hex(new_right_biner_perm)}\n")
         else:
+            print(f"Left (L{round_num + 1}): {format_binary(left_biner_perm, 8)}")
+            print(f"Right (R{round_num + 1}): {format_binary(right_biner_perm, 8)}")
             print(f"Key: {format_binary(round_key_str, 8)}")
             print(f"Expanded Right: {format_binary(expanded_result_str, 8)}")
             print(f"XOR Result: {format_binary(xor_result_str, 8)}")
@@ -370,14 +384,14 @@ def decryption(final_cipher, original_key, output_format="bin"):
 
     # Gabungkan L16 dan R16, lalu lakukan permutasi akhir
     final_result = right_biner_perm + left_biner_perm
-    final_cipher = ''.join([final_result[ip_inverse_table[i] - 1] for i in range(64)])
+    dec_final_cipher = ''.join([final_result[ip_inverse_table[i] - 1] for i in range(64)])
 
     if output_format == "hex":
-        print(f"\nFinal Decrypted Cipher (Hex): {binary_to_hex(final_cipher)}")
-        return binary_to_hex(final_cipher)
+        print(f"\nFinal Decrypted Cipher (Hex): {binary_to_hex(dec_final_cipher)}")
+        return binary_to_hex(dec_final_cipher)
     else:
-        print(f"\nFinal Decrypted Cipher (Binary): {final_cipher}")
-        return binary_to_ascii(final_cipher)
+        print(f"\nFinal Decrypted Cipher (Binary): {format_binary(dec_final_cipher,8)}")
+        return binary_to_ascii(dec_final_cipher)
 
 def main():
     while True:
@@ -414,12 +428,12 @@ def main():
 
             # Konversi hasil enkripsi ke biner (untuk input format text)
             if input_format == "text":
-                enc_to_binary = string_to_binary(enc)
+                enc_to_binary = enc
             else:
                 enc_to_binary = hex_to_binary(enc)
 
             # Dekripsi
-            dec = decryption(enc_to_binary, original_key, output_format)
+            dec = decryption(enc_to_binary, original_key, output_format, input_format)
             print("\nTeks yang didekripsi:", dec)
 
             ulang = input("\nApakah Anda ingin menjalankan program lagi? (ya/tidak): ").lower()
